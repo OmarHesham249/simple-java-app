@@ -2,14 +2,15 @@ pipeline {
     agent any
 
     tools {
+        // تعريف نسخة المافن المتسطبة عندك في جينكينز
         maven 'M3916'
     }
 
     stages {
-        // سيبنا الـ Fetch لكودك أنت عشان نضمن إنه بيبني من الريبو الصح
         stage('1. Fetch Code') {
             steps {
                 echo 'Fetching Code from GitHub...'
+                // سحب الكود من الريبو بتاعك أنت الحقيقي
                 git branch: 'main', url: 'https://github.com/OmarHesham249/simple-java-app'
             }
         }
@@ -17,6 +18,7 @@ pipeline {
         stage('2. Build') {
             steps {
                 echo 'Building Java Application using Maven...'
+                // عمل clean و compile للكود بناءً على pom.xml المعدل (Java 8)
                 sh 'mvn clean compile'
             }
         }
@@ -24,6 +26,7 @@ pipeline {
         stage('3. Test') {
             steps {
                 echo 'Running Unit Tests and Packaging...'
+                // تشغيل التستس وتجميع الملف النهائي (.jar) في فولدر target
                 sh 'mvn test package'
             }
         }
@@ -32,16 +35,17 @@ pipeline {
             steps {
                 echo 'Building Docker Image and Pushing to Docker Hub...'
                 
-                // هنا بننده على الـ Credentials اللي عملناها في جينكنز
+                // استدعاء الـ Credentials اللي عملناها باسم dockerhub-creds
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                     
-                    // 1. بنبني الإيميج بـ الاسم بتاعك أنت
+                    echo 'Building Docker Image...'
                     sh "docker build -t ${USERNAME}/simple-java-app:latest ."
                     
-                    // 2. بنسجل دخول على السيرفر أوتوماتيك
-                    sh "docker login -u ${USERNAME} -p ${PASSWORD}"
+                    echo 'Logging into Docker Hub...'
+                    // تسجيل الدخول بالطريقة الآمنة اللي هتحل إيرور الـ Authorization Header
+                    sh "echo '${PASSWORD}' | docker login -u ${USERNAME} --password-stdin"
                     
-                    // 3. بنرفع الإيميج على حسابك في دوكر هب
+                    echo 'Pushing Image to Docker Hub...'
                     sh "docker push ${USERNAME}/simple-java-app:latest"
                 }
             }
@@ -50,12 +54,15 @@ pipeline {
         stage('5. Deploy') {
             steps {
                 echo 'Deploying Application to Production...'
+                // إيقاف ومسح أي كونتينر قديم شغال بنفس الاسم عشان ما يحصلش تعارض في البورتات
                 sh 'docker stop my-running-app || true'
                 sh 'docker rm my-running-app || true'
 
-                // تشغيل الكونتينر من الإيميج بتاعتك أنت بعد ما اتصبت على السيرفر
+                echo 'Starting the new container...'
+                // تشغيل الكونتينر الجديد من الإيميج بتاعتك اللي لسه مرفوعة حالا
                 sh 'docker run -d --name my-running-app -p 8081:8080 omarhesham249/simple-java-app:latest'
-                echo 'Application is live on port 8081!'
+                
+                echo '✅ Success! Application is live on port 8081!'
             }
         }
     }
