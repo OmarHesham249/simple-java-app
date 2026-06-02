@@ -37,7 +37,7 @@ pipeline {
                     sh 'docker build -t $USERNAME/simple-java-app:latest .'
                     
                     echo 'Logging into Docker Hub...'
-                    // الطريقة دي متوافقة مع الـ sh العادي وبتمرر الـ Env Variable صح جداً
+                    // الطريقة دي بتمرر الـ Token الجديد اللي حطيته للـ stdin بتاع الدوكر علطول
                     sh 'echo "$PASSWORD" | docker login -u $USERNAME --password-stdin'
                     
                     echo 'Pushing Image to Docker Hub...'
