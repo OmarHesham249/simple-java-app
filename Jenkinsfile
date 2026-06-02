@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     tools {
+        // نسخة المافن المتسطبة عندك
         maven 'M3916'
     }
 
@@ -31,15 +32,18 @@ pipeline {
             steps {
                 echo 'Building Docker Image and Pushing to Docker Hub...'
                 
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-creds') {
-                        
-                        echo 'Building Docker Image...'
-                        def myImage = docker.build("omarhesham249/simple-java-app:latest", ".")
-                        
-                        echo 'Pushing Image to Docker Hub...'
-                        myImage.push()
-                    }
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+                    
+                    echo 'Building Docker Image...'
+                    // استخدمنا السنجل كوتس بره عشان الـ Linux هو اللي يترجم المتغيرات
+                    sh 'docker build -t $USERNAME/simple-java-app:latest .'
+                    
+                    echo 'Logging into Docker Hub...'
+                    // الطريقة دي بيمرر الباسورد من الـ Environment علطول بأمان ومن غير أمر echo خالص
+                    sh 'docker login -u $USERNAME --password-stdin <<< "$PASSWORD"'
+                    
+                    echo 'Pushing Image to Docker Hub...'
+                    sh 'docker push $USERNAME/simple-java-app:latest'
                 }
             }
         }
