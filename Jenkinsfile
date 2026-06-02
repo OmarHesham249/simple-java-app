@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     tools {
-        // نسخة المافن المتسطبة عندك
         maven 'M3916'
     }
 
@@ -35,12 +34,11 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                     
                     echo 'Building Docker Image...'
-                    // استخدمنا السنجل كوتس بره عشان الـ Linux هو اللي يترجم المتغيرات
                     sh 'docker build -t $USERNAME/simple-java-app:latest .'
                     
                     echo 'Logging into Docker Hub...'
-                    // الطريقة دي بيمرر الباسورد من الـ Environment علطول بأمان ومن غير أمر echo خالص
-                    sh 'docker login -u $USERNAME --password-stdin <<< "$PASSWORD"'
+                    // الطريقة دي متوافقة مع الـ sh العادي وبتمرر الـ Env Variable صح جداً
+                    sh 'echo "$PASSWORD" | docker login -u $USERNAME --password-stdin'
                     
                     echo 'Pushing Image to Docker Hub...'
                     sh 'docker push $USERNAME/simple-java-app:latest'
