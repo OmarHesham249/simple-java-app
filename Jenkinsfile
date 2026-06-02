@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        // تعريف نسخة المافن المتسطبة عندك في جينكينز
+        // نسخة المافن اللي متظبطة في جينكينز
         maven 'M3916'
     }
 
@@ -10,7 +10,7 @@ pipeline {
         stage('1. Fetch Code') {
             steps {
                 echo 'Fetching Code from GitHub...'
-                // سحب الكود من الريبو بتاعك أنت الحقيقي
+                // سحب كودك من الريبو الصح
                 git branch: 'main', url: 'https://github.com/OmarHesham249/simple-java-app'
             }
         }
@@ -18,7 +18,6 @@ pipeline {
         stage('2. Build') {
             steps {
                 echo 'Building Java Application using Maven...'
-                // عمل clean و compile للكود بناءً على pom.xml المعدل (Java 8)
                 sh 'mvn clean compile'
             }
         }
@@ -26,7 +25,6 @@ pipeline {
         stage('3. Test') {
             steps {
                 echo 'Running Unit Tests and Packaging...'
-                // تشغيل التستس وتجميع الملف النهائي (.jar) في فولدر target
                 sh 'mvn test package'
             }
         }
@@ -35,18 +33,18 @@ pipeline {
             steps {
                 echo 'Building Docker Image and Pushing to Docker Hub...'
                 
-                // استدعاء الـ Credentials اللي عملناها باسم dockerhub-creds
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
                     
                     echo 'Building Docker Image...'
-                    sh "docker build -t ${USERNAME}/simple-java-app:latest ."
+                    // استخدمنا سنجل كوتس بره عشان نخلي الـ Linux ينفذ المتغيرات بنفسه
+                    sh 'docker build -t $USERNAME/simple-java-app:latest .'
                     
                     echo 'Logging into Docker Hub...'
-                    // تسجيل الدخول بالطريقة الآمنة اللي هتحل إيرور الـ Authorization Header
-                    sh "echo '${PASSWORD}' | docker login -u ${USERNAME} --password-stdin"
+                    // الحل القاطع لإيرور الـ مالفورميد: تمرير الباسورد كـ Env Variable محمي
+                    sh 'echo "$PASSWORD" | docker login -u $USERNAME --password-stdin'
                     
                     echo 'Pushing Image to Docker Hub...'
-                    sh "docker push ${USERNAME}/simple-java-app:latest"
+                    sh 'docker push $USERNAME/simple-java-app:latest'
                 }
             }
         }
@@ -54,12 +52,12 @@ pipeline {
         stage('5. Deploy') {
             steps {
                 echo 'Deploying Application to Production...'
-                // إيقاف ومسح أي كونتينر قديم شغال بنفس الاسم عشان ما يحصلش تعارض في البورتات
+                // تنظيف الكونتينرات القديمة منعاً لقفش البورتات
                 sh 'docker stop my-running-app || true'
                 sh 'docker rm my-running-app || true'
 
                 echo 'Starting the new container...'
-                // تشغيل الكونتينر الجديد من الإيميج بتاعتك اللي لسه مرفوعة حالا
+                // تشغيل الأبلكيشن من الإيميج بتاعتك اللي اتعملها بوش فوق
                 sh 'docker run -d --name my-running-app -p 8081:8080 omarhesham249/simple-java-app:latest'
                 
                 echo '✅ Success! Application is live on port 8081!'
