@@ -1,44 +1,52 @@
 pipeline {
-    agent {
-        label 'aws-agent' // أو agent any حسب السيرفر بتاعك
-    }
-    
+    agent any
+
     tools {
         maven 'M3916'
     }
 
     stages {
-        // شيلنا مرحلة الـ Fetch Code خالص عشان ما تبوظش الكود بتاعك
+        stage('1. Fetch Code') {
+            steps {
+                echo 'Fetching Code from GitHub...'
+                git branch: 'main', url: 'https://github.com/ziadibrahim509/simple-java-app'
+            }
+        }
 
-        stage('1. Build') {
+       stage('2. Build') {
             steps {
                 echo 'Building Java Application using Maven...'
-                sh 'mvn clean compile'
-                // السطر ده هيشتغل على الـ pom.xml المعدل بتاعك أنت
+                withMaven(maven: 'M3916') {
+                    sh 'mvn clean compile'
+                }
             }
         }
 
-        stage('2. Test') {
+        stage('3. Test') {
             steps {
                 echo 'Running Unit Tests...'
-                sh 'mvn test package'
+                withMaven(maven: 'M3916') {
+                    sh 'mvn test package'
+                }
             }
         }
 
-        stage('3. Push (Docker Image)') {
+        stage('4. Push (Docker Image)') {
             steps {
-                echo 'Building Docker Image...'
-                // غيرتلك الاسم هنا لـ omar عشان يبقى اليوزر بتاعك صح
-                sh 'docker build -t omar/simple-java-app:latest .'
+                echo 'Building Docker Image and Pushing...'
+
+                sh 'docker build -t haythammohamd/simple-java-app:latest .'
+
             }
         }
 
-        stage('4. Deploy') {
+        stage('5. Deploy') {
             steps {
-                echo 'Deploying Application...'
+                echo 'Deploying Application to Production...'
                 sh 'docker stop my-running-app || true'
                 sh 'docker rm my-running-app || true'
-                sh 'docker run -d --name my-running-app -p 8081:8080 omar/simple-java-app:latest'
+
+                sh 'docker run -d --name my-running-app -p 8081:8080 haythammohamd/simple-java-app:latest'
                 echo 'Application is live on port 8081!'
             }
         }
