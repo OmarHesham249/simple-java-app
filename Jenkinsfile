@@ -31,17 +31,18 @@ pipeline {
             steps {
                 echo 'Building Docker Image and Pushing to Docker Hub...'
                 
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+                // غيرنا اسم المتغير الداخلي لـ DOCKER_PASS عشان يقرأ نضيف 
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
                     
                     echo 'Building Docker Image...'
-                    sh 'docker build -t $USERNAME/simple-java-app:latest .'
+                    sh 'docker build -t $DOCKER_USER/simple-java-app:latest .'
                     
                     echo 'Logging into Docker Hub...'
-                    // الطريقة دي بتمرر الـ Token الجديد اللي حطيته للـ stdin بتاع الدوكر علطول
-                    sh 'echo "$PASSWORD" | docker login -u $USERNAME --password-stdin'
+                    // السنجل كوتس برة إجباري عشان السيرفر يمرر التوكن صح للـ stdin
+                    sh 'echo "$DOCKER_PASS" | docker login -u $DOCKER_USER --password-stdin'
                     
                     echo 'Pushing Image to Docker Hub...'
-                    sh 'docker push $USERNAME/simple-java-app:latest'
+                    sh 'docker push $DOCKER_USER/simple-java-app:latest'
                 }
             }
         }
